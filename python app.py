@@ -1,5 +1,5 @@
 
-The script will prompt you to enter the path to the `targets.yaml` file.
+The script will automatically load the server information from the `targets.yaml` file.
 
 3. The script will establish a connection with the specified server and maintain it. It will log connection status changes, including connection duration, disconnection times, and reconnection attempts.
 
