@@ -37,8 +37,10 @@ def maintain_connection():
         else:
             try:
                 # Perform any necessary operations to maintain the connection
-                # For example, send a keep-alive packet
-                pass
+                # For example, send a keep-alive packet or receive data
+                data = sock.recv(1024)  # Receive data from the server
+                if not data:
+                    raise Exception("Server closed the connection")
             except Exception as e:
                 connected = False
                 disconnection_start_time = datetime.now()
