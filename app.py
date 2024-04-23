@@ -1,6 +1,7 @@
 import socket
 import time
 import logging
+import yaml
 from datetime import datetime, timezone, timedelta
 from contextlib import closing
 
@@ -8,9 +9,11 @@ from contextlib import closing
 log_filename = f'logs/connection_log_{datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")}.txt'
 logging.basicConfig(filename=log_filename, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-# Server information
-SERVER_HOST = 'example.com'
-SERVER_PORT = 443
+# Load server information from targets.yaml
+with open('targets.yaml', 'r') as f:
+    targets = yaml.safe_load(f)
+SERVER_HOSTS = targets['server_hosts']
+SERVER_PORT = targets['server_port']
 
 # Connection pool
 CONNECTION_POOL_SIZE = 10
@@ -82,13 +85,13 @@ def send_heartbeat(conn):
     """Send a heartbeat message to the server."""
     send_data(conn, b'HEARTBEAT')
 
-def maintain_connection():
+def maintain_connection(server_host):
     last_heartbeat_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
     while True:
         with closing(get_connection()) as conn:
             try:
-                conn.connect((SERVER_HOST, SERVER_PORT))
-                logging.info(f'Connected to {SERVER_HOST}:{SERVER_PORT}')
+                conn.connect((server_host, SERVER_PORT))
+                logging.info(f'Connected to {server_host}:{SERVER_PORT}')
                 connection_start_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
                 disconnection_start_time = None
 
@@ -107,11 +110,12 @@ def maintain_connection():
                         last_heartbeat_time = current_time
 
             except Exception as e:
-                logging.error(f'Disconnected from {SERVER_HOST}:{SERVER_PORT}: {e}')
+                logging.error(f'Disconnected from {server_host}:{SERVER_PORT}: {e}')
                 disconnection_start_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
                 logging.info(f'Connection duration: {disconnection_start_time - connection_start_time}')
                 release_connection(conn)
                 time.sleep(1)  # Wait before reconnecting
 
 if __name__ == '__main__':
-    maintain_connection()
+    for server_host in SERVER_HOSTS:
+        maintain_connection(server_host)
