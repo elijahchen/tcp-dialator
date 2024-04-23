@@ -117,5 +117,7 @@ def maintain_connection(server_host):
                 time.sleep(1)  # Wait before reconnecting
 
 if __name__ == '__main__':
-    for server_host in SERVER_HOSTS:
+    with open('targets.yaml', 'r') as f:
+        targets = yaml.safe_load(f)
+    for server_host in targets['server_hosts']:
         maintain_connection(server_host)
