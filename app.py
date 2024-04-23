@@ -5,6 +5,7 @@ import yaml
 from datetime import datetime, timezone, timedelta
 from contextlib import closing
 import os
+from typing import List, Optional
 
 # Configure logging
 log_filename = f'logs/connection_log_{datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")}.txt'
@@ -23,7 +24,7 @@ except (yaml.YAMLError, KeyError) as e:
 
 # Connection pool
 CONNECTION_POOL_SIZE = 10
-connection_pool = []
+connection_pool: List[socket.socket] = []
 
 # Heartbeat interval (in seconds)
 HEARTBEAT_INTERVAL = 60
@@ -34,7 +35,7 @@ SOCKET_TIMEOUT = 10
 # Maximum number of retries for send/receive operations
 MAX_RETRIES = 3
 
-def get_connection():
+def get_connection() -> socket.socket:
     """Get a connection from the pool or create a new one."""
     try:
         conn = connection_pool.pop()
@@ -43,55 +44,55 @@ def get_connection():
         conn.settimeout(SOCKET_TIMEOUT)
     return conn
 
-def release_connection(conn):
+def release_connection(conn: socket.socket) -> None:
     """Release a connection back to the pool."""
     if len(connection_pool) < CONNECTION_POOL_SIZE:
         connection_pool.append(conn)
     else:
         conn.close()
 
-def send_data(conn, data):
-    """Send data to the server with retries."""
+def retry_operation(operation, *args, **kwargs):
+    """Retry an operation with exponential backoff."""
     retries = 0
     while retries < MAX_RETRIES:
         try:
-            conn.sendall(data)
-            return
+            return operation(*args, **kwargs)
         except Exception as e:
             retries += 1
-            logging.warning(f'Failed to send data: {e}. Retrying ({retries}/{MAX_RETRIES})...')
-            time.sleep(1)  # Wait before retrying
-    logging.error(f'Failed to send data after {MAX_RETRIES} retries.')
-
-def receive_data(conn):
-    """Receive data from the server with retries."""
-    retries = 0
-    while retries < MAX_RETRIES:
-        try:
-            data = conn.recv(1024)
-            if not data:
-                raise Exception("Server closed the connection")
-            # Validate the received data
-            if not validate_data(data):
-                raise Exception("Invalid data received from the server")
-            return data
-        except Exception as e:
-            retries += 1
-            logging.warning(f'Failed to receive data: {e}. Retrying ({retries}/{MAX_RETRIES})...')
-            time.sleep(1)  # Wait before retrying
-    logging.error(f'Failed to receive data after {MAX_RETRIES} retries.')
+            backoff = 2 ** retries
+            logging.warning(f'Failed to perform operation: {e}. Retrying ({retries}/{MAX_RETRIES}) in {backoff} seconds...')
+            time.sleep(backoff)
+    logging.error(f'Failed to perform operation after {MAX_RETRIES} retries.')
     return None
 
-def validate_data(data):
+def send_data(conn: socket.socket, data: bytes) -> None:
+    """Send data to the server with retries."""
+    retry_operation(conn.sendall, data)
+
+def receive_data(conn: socket.socket) -> Optional[bytes]:
+    """Receive data from the server with retries."""
+    def receive_operation(conn):
+        data = conn.recv(1024)
+        if not data:
+            raise Exception("Server closed the connection")
+        # Validate the received data
+        if not validate_data(data):
+            raise Exception("Invalid data received from the server")
+        return data
+
+    return retry_operation(receive_operation, conn)
+
+def validate_data(data: bytes) -> bool:
     """Validate the received data."""
     # Implement your data validation logic here
     return True
 
-def send_heartbeat(conn):
+def send_heartbeat(conn: socket.socket) -> None:
     """Send a heartbeat message to the server."""
     send_data(conn, b'HEARTBEAT')
 
-def maintain_connection(server_host):
+def maintain_connection(server_host: str) -> None:
+    """Maintain a connection with the server, handling reconnections and heartbeats."""
     last_heartbeat_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
     while True:
         with closing(get_connection()) as conn:
