@@ -4,16 +4,22 @@ import logging
 import yaml
 from datetime import datetime, timezone, timedelta
 from contextlib import closing
+import os
 
 # Configure logging
 log_filename = f'logs/connection_log_{datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")}.txt'
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(filename=log_filename, level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # Load server information from targets.yaml
-with open('targets.yaml', 'r') as f:
-    targets = yaml.safe_load(f)
-SERVER_HOSTS = targets['server_hosts']
-SERVER_PORT = targets['server_port']
+try:
+    with open('targets.yaml', 'r') as f:
+        targets = yaml.safe_load(f)
+    SERVER_HOSTS = targets['server_hosts']
+    SERVER_PORT = targets['server_port']
+except (yaml.YAMLError, KeyError) as e:
+    logging.error(f'Error loading targets.yaml: {e}')
+    exit(1)
 
 # Connection pool
 CONNECTION_POOL_SIZE = 10
@@ -117,7 +123,10 @@ def maintain_connection(server_host):
                 time.sleep(1)  # Wait before reconnecting
 
 if __name__ == '__main__':
-    with open('targets.yaml', 'r') as f:
-        targets = yaml.safe_load(f)
-    for server_host in targets['server_hosts']:
-        maintain_connection(server_host)
+    try:
+        with open('targets.yaml', 'r') as f:
+            targets = yaml.safe_load(f)
+        for server_host in targets['server_hosts']:
+            maintain_connection(server_host)
+    except (yaml.YAMLError, KeyError) as e:
+        logging.error(f'Error loading targets.yaml: {e}')
