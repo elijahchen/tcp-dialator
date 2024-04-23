@@ -1,0 +1,4 @@
+server_hosts:
+  - example.com
+  - another.example.net
+server_port: 443
