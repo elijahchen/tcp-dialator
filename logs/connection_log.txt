@@ -1,2 +1,1 @@
-# This is a log file, not a Python script
-# Please provide the Python script file instead
+# This is a log file and will contain verbose connection activities
