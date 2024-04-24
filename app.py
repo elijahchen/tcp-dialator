@@ -92,34 +92,31 @@ def send_heartbeat(conn: socket.socket) -> None:
 def maintain_connection(server_host: str) -> None:
     """Maintain a connection with the server, handling reconnections and heartbeats."""
     last_heartbeat_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
-    while True:
-        with closing(get_connection()) as conn:
-            try:
-                conn.connect((server_host, SERVER_PORT))
-                logging.info(f'Connected to {server_host}:{SERVER_PORT}')
-                connection_start_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
-                disconnection_start_time = None
+    conn = get_connection()
+    try:
+        conn.connect((server_host, SERVER_PORT))
+        logging.info(f'Connected to {server_host}:{SERVER_PORT}')
+        connection_start_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
 
-                while True:
-                    # Receive data from the server
-                    data = receive_data(conn)
-                    if data is not None:
-                        # Process the received data
-                        # ...
-                        pass
+        while True:
+            # Receive data from the server
+            data = receive_data(conn)
+            if data is not None:
+                # Process the received data
+                # ...
+                pass
 
-                    # Send a heartbeat message if necessary
-                    current_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
-                    if (current_time - last_heartbeat_time).total_seconds() >= HEARTBEAT_INTERVAL:
-                        send_heartbeat(conn)
-                        last_heartbeat_time = current_time
+            # Send a heartbeat message if necessary
+            current_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
+            if (current_time - last_heartbeat_time).total_seconds() >= HEARTBEAT_INTERVAL:
+                send_heartbeat(conn)
+                last_heartbeat_time = current_time
 
-            except Exception as e:
-                logging.error(f'Disconnected from {server_host}:{SERVER_PORT}: {e}')
-                disconnection_start_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
-                logging.info(f'Connection duration: {disconnection_start_time - connection_start_time}')
-                release_connection(conn)
-                time.sleep(1)  # Wait before reconnecting
+    except Exception as e:
+        logging.error(f'Disconnected from {server_host}:{SERVER_PORT}: {e}')
+        disconnection_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-5)))
+        logging.info(f'Connection duration: {disconnection_time - connection_start_time}')
+        release_connection(conn)
 
 if __name__ == '__main__':
     try:
