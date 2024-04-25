@@ -33,6 +33,10 @@ SOCKET_TIMEOUT = 10
 # Maximum number of retries for send/receive operations
 MAX_RETRIES = 3
 
+# Data validation parameters
+DATA_HEADER = b'DATA:'
+MIN_DATA_LENGTH = 10
+
 def get_connection() -> socket.socket:
     """Get a connection from the pool or create a new one."""
     try:
@@ -82,8 +86,8 @@ def receive_data(conn: socket.socket) -> Optional[bytes]:
 
 def validate_data(data: bytes) -> bool:
     """Validate the received data."""
-    # Implement your data validation logic here
-    return True
+    # Check if the data starts with the expected header and has a minimum length
+    return data.startswith(DATA_HEADER) and len(data) >= MIN_DATA_LENGTH + len(DATA_HEADER)
 
 def send_heartbeat(conn: socket.socket) -> None:
     """Send a heartbeat message to the server."""
