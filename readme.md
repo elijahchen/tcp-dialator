@@ -7,13 +7,48 @@ This Python script establishes and maintains a TCP connection with a server on p
 - Python 3.x
 - `pyyaml` library (install with `pip install pyyaml`)
 
+## Installation
+
+1. **Install Python**: If you don't have Python installed on your system, you can download it from the official Python website (https://www.python.org/downloads/). Make sure to download the latest version of Python 3.x.
+
+2. **Install pip**: Pip is the package installer for Python. It comes pre-installed with Python versions 3.4 and later. If you have an older version of Python, you can install pip by following the instructions on the official pip website (https://pip.pypa.io/en/stable/installing/).
+
+3. **Install pyyaml**: This script requires the `pyyaml` library to load the server information from the `targets.yaml` file. You can install it using pip by running the following command in your terminal or command prompt:
+
+   ```
+   pip install pyyaml
+   ```
+
+   If you encounter any permission issues during the installation, try running the command with administrative privileges:
+
+   ```
+   sudo pip install pyyaml  # On Unix/Linux
+   ```
+
+   ```
+   pip install pyyaml --user  # On Windows
+   ```
+
 ## Usage
 
 1. Create a `targets.yaml` file in the same directory as the script, containing the server host and port information. For example:
 
+   ```yaml
+   server_hosts:
+     - example.com
+     - another.example.net
+   server_port: 443
+   ```
+
 2. The script will automatically load the server information from the `targets.yaml` file.
 
-3. The script will establish a connection with the specified server and maintain it. It will log connection status changes, including connection duration, disconnection times, and reconnection attempts.
+3. Run the `app.py` script using the following command:
+
+   ```
+   python app.py
+   ```
+
+   The script will establish a connection with the specified server(s) and maintain it. It will log connection status changes, including connection duration, disconnection times, and reconnection attempts.
 
 ## Logging
 
