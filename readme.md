@@ -1,4 +1,4 @@
-# TCP Connection Maintenance Script
+# TCP Dialator Script
 
 This Python script establishes and maintains a TCP connection with a server on port 443. It handles reconnections, sends periodic heartbeat messages, and logs connection status changes with detailed information.
 
